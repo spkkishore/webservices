@@ -46,7 +46,7 @@
       
     - name: Display CPU Utilization
       debug:
-        msg: "CPU Utilization: {{ cpu_utilization }}"
+        msg: "CPU Utilization: {{ cpu_utilization.stdout }}"
         
     - name: Get top 5 processes with CPU and memory utilization
       win_shell: |

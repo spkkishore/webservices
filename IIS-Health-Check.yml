@@ -65,12 +65,20 @@
         ($memory.TotalVisibleMemorySize - $memory.FreePhysicalMemory) / $memory.TotalVisibleMemorySize * 100
       register: memory_utilization
       changed_when: false
-
+      
+    - name: Display CPU Utilization
+      debug:
+        msg: "Memory Utilization: {{ memory_utilization.stdout }}"
+        
     - name: Get Disk Space Utilization
       win_disk_facts:
       register: disk_space_utilization
       changed_when: false
-
+      
+    - name: Display CPU Utilization
+      debug:
+        msg: "Disk Utilization: {{ disk_space_utilization.stdout }}"
+        
     - name: Get list of IIS sites and their status
       ansible.windows.win_shell: |
         Import-Module WebAdministration

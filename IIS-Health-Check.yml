@@ -1,6 +1,6 @@
 ---
 - name: Get List of Services with Start Mode Auto and State Stopped
-  hosts: windows_servers
+  hosts: Windows_Servers
   tasks:
     - name: Install IIS
       ansible.windows.win_feature:

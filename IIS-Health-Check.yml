@@ -45,7 +45,7 @@
       changed_when: false
 
     - name: Get top 5 processes with CPU and memory utilization
-      ansible.windows.win_command: >
+      win_shell: |
         Get-Process |
         Sort-Object -Property CPU -Descending |
         Select-Object -First 5 -Property Name, CPU, WorkingSet |

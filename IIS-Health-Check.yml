@@ -43,7 +43,11 @@
         ($cpu.PercentProcessorTime | Measure-Object -Average).Average
       register: cpu_utilization
       changed_when: false
-
+      
+    - name: Display CPU Utilization
+      debug:
+        msg: "CPU Utilization: {{ cpu_utilization }}"
+        
     - name: Get top 5 processes with CPU and memory utilization
       win_shell: |
         Get-Process |

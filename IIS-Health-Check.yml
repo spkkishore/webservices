@@ -1,0 +1,119 @@
+---
+- name: Get List of Services with Start Mode Auto and State Stopped
+  hosts: windows_servers
+  tasks:
+    - name: Install IIS
+      ansible.windows.win_feature:
+        name: Web-Server
+        state: present
+        
+    - name: Gather service facts
+      ansible.windows.win_service_facts:
+      register: service_facts
+
+    - name: Filter services with start mode auto and state stopped
+      debug:
+        msg: "Service Name: {{ item.name }}"
+      loop: "{{ service_facts.services }}"
+      when:
+        - item.start_mode == 'Auto'       # Check if service start mode is 'Auto'
+        - item.state == 'Stopped'         # Check if service state is 'Stopped'
+    
+    - name: Check w3svc service status
+      ansible.windows.win_service:
+        name: w3svc
+      register: w3svc_status
+
+    - name: Display w3svc service status
+      debug:
+        msg: "w3svc Service Status: {{ w3svc_status.state }}"
+
+    - name: Check WAS service status
+      ansible.windows.win_service:
+        name: WAS
+      register: was_status
+
+    - name: Display WAS service status
+      debug:
+        msg: "WAS Service Status: {{ was_status.state }}"
+
+    - name: Get CPU Utilization
+      win_shell: |
+        $cpu = Get-WmiObject Win32_PerfFormattedData_PerfOS_Processor | Select PercentProcessorTime
+        ($cpu.PercentProcessorTime | Measure-Object -Average).Average
+      register: cpu_utilization
+      changed_when: false
+
+    - name: Get top 5 processes with CPU and memory utilization
+      ansible.windows.win_command: >
+        Get-Process |
+        Sort-Object -Property CPU -Descending |
+        Select-Object -First 5 -Property Name, CPU, WorkingSet |
+        ConvertTo-Json
+      register: process_info
+
+    - debug:
+        msg: "{{ process_info.stdout }}"  
+
+    - name: Get Memory Utilization
+      win_shell: |
+        $memory = Get-WmiObject Win32_OperatingSystem
+        ($memory.TotalVisibleMemorySize - $memory.FreePhysicalMemory) / $memory.TotalVisibleMemorySize * 100
+      register: memory_utilization
+      changed_when: false
+
+    - name: Get Disk Space Utilization
+      win_disk_facts:
+      register: disk_space_utilization
+      changed_when: false
+
+    - name: Get list of IIS sites and their status
+      ansible.windows.win_shell: |
+        Import-Module WebAdministration
+        Get-Website |
+        Select-Object -Property Name, State |
+        ConvertTo-Json
+      register: iis_sites_info
+
+    - debug:
+        msg: "IIS Sites: {{ iis_sites_info.stdout }}"
+
+    - name: Get list of application pools and their status
+      ansible.windows.win_shell: |
+        Import-Module WebAdministration
+        Get-ChildItem IIS:\AppPools |
+        Select-Object -Property Name, State |
+        ConvertTo-Json
+      register: app_pools_info
+
+    - debug:
+        msg: "Application Pools: {{ app_pools_info.stdout }}"
+
+    - name: Get SSL certs bound to websites with expiry date
+      ansible.windows.win_shell: |
+        Import-Module WebAdministration
+        $sites = Get-ChildItem -Path IIS:\SSLBindings
+        $certs = @()
+        foreach ($site in $sites) {
+            $cert = Get-ChildItem -Path "Cert:\LocalMachine\My\$($site.CertificateHash)"
+            $certs += @{
+                'SiteName' = $site.SiteName
+                'Certificate' = $cert.Subject
+                'ExpiryDate' = $cert.NotAfter
+            }
+        }
+        $certs | ConvertTo-Json
+      register: ssl_certs_info
+
+    - debug:
+        msg: "SSL Certificates: {{ ssl_certs_info.stdout }}"
+
+    - name: Get number of active connections
+      ansible.windows.win_shell: |
+        Import-Module WebAdministration
+        $active_connections = (Get-WebGlobalState).ActiveConnections
+        $active_connections
+      register: active_connections_info
+
+    - debug:
+        msg: "Number of active connections to IIS: {{ active_connections_info.stdout }}"

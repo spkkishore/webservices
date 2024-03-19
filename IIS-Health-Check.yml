@@ -86,7 +86,12 @@
         # Show disk size in Gigabytes
         disksize_gb_human: '{{ disk.size|filesizeformat }}'        # returns "240.1 GB" (human readable)
         
-        
+    - name: get disk physical_disk and partition facts on the target
+      win_disk_facts:
+        filter:
+          - physical_disk
+          - partitions
+      
     - name: Get list of IIS sites and their status
       ansible.windows.win_shell: |
         Import-Module WebAdministration

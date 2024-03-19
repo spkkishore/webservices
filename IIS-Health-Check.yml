@@ -8,7 +8,7 @@
         state: present
         
     - name: Gather service facts
-      ansible.windows.win_service_facts:
+      ansible.windows.win_service_info:
       register: service_facts
 
     - name: Filter services with start mode auto and state stopped
